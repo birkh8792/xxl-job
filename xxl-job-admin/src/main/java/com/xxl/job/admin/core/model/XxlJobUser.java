@@ -2,15 +2,21 @@ package com.xxl.job.admin.core.model;
 
 import org.springframework.util.StringUtils;
 
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
 /**
  * @author xuxueli 2019-05-04 16:43:12
  */
+@Entity
+@Table(name =  "xxl_job_user")
 public class XxlJobUser {
-	
+	@Id
 	private int id;
 	private String username;		// 账号
 	private String password;		// 密码
-	private int role;				// 角色：0-普通用户、1-管理员
+	private Byte role;				// 角色：0-普通用户、1-管理员
 	private String permission;	// 权限：执行器ID列表，多个逗号分割
 
 	public int getId() {
@@ -37,11 +43,11 @@ public class XxlJobUser {
 		this.password = password;
 	}
 
-	public int getRole() {
+	public Byte getRole() {
 		return role;
 	}
 
-	public void setRole(int role) {
+	public void setRole(Byte role) {
 		this.role = role;
 	}
 

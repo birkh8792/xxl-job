@@ -8,6 +8,10 @@ import com.xxl.job.admin.dao.XxlJobGroupDao;
 import com.xxl.job.admin.dao.XxlJobUserDao;
 import com.xxl.job.admin.service.LoginService;
 import com.xxl.job.core.biz.model.ReturnT;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.DigestUtils;
@@ -17,7 +21,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.annotation.Resource;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,10 +61,29 @@ public class UserController {
                                         @RequestParam(required = false, defaultValue = "10") int length,
                                         String username, int role) {
 
-        // page list
-        List<XxlJobUser> list = xxlJobUserDao.pageList(start, length, username, role);
-        int list_count = xxlJobUserDao.pageListCount(start, length, username, role);
+        int page = (start / length) + 1 ;
+        Pageable pageable = PageRequest.of(page-1, length);
+        Specification specification = new Specification<XxlJobUser>() {
+            @Override
+            public Predicate toPredicate(Root<XxlJobUser> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+                List<Predicate> predicates = new ArrayList<>();
+                // 判断传入的值是否为空
+                if (!"".equals(username)) {
+                    predicates.add(cb.like(root.get("username"), "%" + username + "%"));
+                }
+                // 判断年龄是否为空
+                if (role > -1) {
+                    predicates.add(cb.equal(root.get("role"), role));
+                }
 
+                return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+            }
+        };
+        Page pageVo = xxlJobUserDao.findAll(specification, pageable);
+
+        // page list
+        List<XxlJobUser> list = pageVo.getContent();
+        long list_count = pageVo.getTotalElements();
         // filter
         if (list!=null && list.size()>0) {
             for (XxlJobUser item: list) {
@@ -96,7 +124,7 @@ public class UserController {
         xxlJobUser.setPassword(DigestUtils.md5DigestAsHex(xxlJobUser.getPassword().getBytes()));
 
         // check repeat
-        XxlJobUser existUser = xxlJobUserDao.loadByUserName(xxlJobUser.getUsername());
+        XxlJobUser existUser = xxlJobUserDao.findByUsername(xxlJobUser.getUsername());
         if (existUser != null) {
             return new ReturnT<String>(ReturnT.FAIL_CODE, I18nUtil.getString("user_username_repeat") );
         }
@@ -130,7 +158,7 @@ public class UserController {
         }
 
         // write
-        xxlJobUserDao.update(xxlJobUser);
+        xxlJobUserDao.save(xxlJobUser);
         return ReturnT.SUCCESS;
     }
 
@@ -145,7 +173,7 @@ public class UserController {
             return new ReturnT<String>(ReturnT.FAIL.getCode(), I18nUtil.getString("user_update_loginuser_limit"));
         }
 
-        xxlJobUserDao.delete(id);
+        xxlJobUserDao.deleteById(id);
         return ReturnT.SUCCESS;
     }
 
@@ -169,9 +197,9 @@ public class UserController {
         XxlJobUser loginUser = (XxlJobUser) request.getAttribute(LoginService.LOGIN_IDENTITY_KEY);
 
         // do write
-        XxlJobUser existUser = xxlJobUserDao.loadByUserName(loginUser.getUsername());
+        XxlJobUser existUser = xxlJobUserDao.findByUsername(loginUser.getUsername());
         existUser.setPassword(md5Password);
-        xxlJobUserDao.update(existUser);
+        xxlJobUserDao.save(existUser);
 
         return ReturnT.SUCCESS;
     }

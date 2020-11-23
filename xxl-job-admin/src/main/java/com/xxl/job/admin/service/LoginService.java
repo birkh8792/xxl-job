@@ -49,7 +49,7 @@ public class LoginService {
         }
 
         // valid passowrd
-        XxlJobUser xxlJobUser = xxlJobUserDao.loadByUserName(username);
+        XxlJobUser xxlJobUser = xxlJobUserDao.findByUsername(username);
         if (xxlJobUser == null) {
             return new ReturnT<String>(500, I18nUtil.getString("login_param_unvalid"));
         }
@@ -92,7 +92,7 @@ public class LoginService {
                 logout(request, response);
             }
             if (cookieUser != null) {
-                XxlJobUser dbUser = xxlJobUserDao.loadByUserName(cookieUser.getUsername());
+                XxlJobUser dbUser = xxlJobUserDao.findByUsername(cookieUser.getUsername());
                 if (dbUser != null) {
                     if (cookieUser.getPassword().equals(dbUser.getPassword())) {
                         return dbUser;
