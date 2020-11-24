@@ -6,9 +6,18 @@ import com.xxl.job.admin.core.scheduler.ScheduleTypeEnum;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.annotation.Resource;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Predicate;
+import javax.persistence.criteria.Root;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -21,9 +30,49 @@ public class XxlJobInfoDaoTest {
 	
 	@Test
 	public void pageList(){
-		List<XxlJobInfo> list = xxlJobInfoDao.pageList(0, 20, 0, -1, null, null, null);
-		int list_count = xxlJobInfoDao.pageListCount(0, 20, 0, -1, null, null, null);
-		
+
+		int start = 0;
+		int length = 20;
+		int jobGroup = 0;
+		int triggerStatus = -1;
+		String jobDesc = null;
+		String executorHandler = null;
+		String author = null;
+
+		int page = (start / length) + 1 ;
+		Pageable pageable = PageRequest.of(page-1, length);
+		Specification specification = new Specification<XxlJobInfo>() {
+			@Override
+			public Predicate toPredicate(Root<XxlJobInfo> root, CriteriaQuery<?> query, CriteriaBuilder cb) {
+				List<Predicate> predicates = new ArrayList<>();
+				if (jobGroup > 0) {
+					predicates.add(cb.equal(root.get("job_group"), jobGroup));
+				}
+				if (triggerStatus >= 0) {
+					predicates.add(cb.equal(root.get("trigger_status"), triggerStatus));
+				}
+				// 判断传入的值是否为空
+				if (!"".equals(jobDesc)) {
+					predicates.add(cb.like(root.get("job_desc"), "%" + jobDesc + "%"));
+				}
+				if (!"".equals(executorHandler)) {
+					predicates.add(cb.like(root.get("executor_handler"), "%" + executorHandler + "%"));
+				}
+				if (!"".equals(author)) {
+					predicates.add(cb.like(root.get("author"), "%" + author + "%"));
+				}
+				return cb.and(predicates.toArray(new Predicate[predicates.size()]));
+			}
+		};
+		Page pageVo = xxlJobInfoDao.findAll(specification, pageable);
+
+		//List<XxlJobInfo> list = xxlJobInfoDao.pageList(0, 20, 0, -1, null, null, null);
+		//int list_count = xxlJobInfoDao.pageListCount(0, 20, 0, -1, null, null, null);
+
+		// page list
+		List<XxlJobInfo> list = pageVo.getContent();
+		long list_count = pageVo.getTotalElements();
+
 		System.out.println(list);
 		System.out.println(list_count);
 
@@ -47,15 +96,15 @@ public class XxlJobInfoDaoTest {
 		info.setGlueType("setGlueType");
 		info.setGlueSource("setGlueSource");
 		info.setGlueRemark("setGlueRemark");
-		info.setChildJobId("1");
+		info.setChildJobid("1");
 
 		info.setAddTime(new Date());
 		info.setUpdateTime(new Date());
 		info.setGlueUpdatetime(new Date());
 
-		int count = xxlJobInfoDao.save(info);
+		XxlJobInfo save = xxlJobInfoDao.save(info);
 
-		XxlJobInfo info2 = xxlJobInfoDao.loadById(info.getId());
+		XxlJobInfo info2 = xxlJobInfoDao.getOne(info.getId());
 		info.setScheduleType(ScheduleTypeEnum.FIX_RATE.name());
 		info.setScheduleConf(String.valueOf(44));
 		info.setMisfireStrategy(MisfireStrategyEnum.FIRE_ONCE_NOW.name());
@@ -70,16 +119,16 @@ public class XxlJobInfoDaoTest {
 		info2.setGlueSource("setGlueSource2");
 		info2.setGlueRemark("setGlueRemark2");
 		info2.setGlueUpdatetime(new Date());
-		info2.setChildJobId("1");
+		info2.setChildJobid("1");
 
 		info2.setUpdateTime(new Date());
-		int item2 = xxlJobInfoDao.update(info2);
+		XxlJobInfo save2 = xxlJobInfoDao.save(info2);
 
-		xxlJobInfoDao.delete(info2.getId());
+		xxlJobInfoDao.deleteById(info2.getId());
 
 		List<XxlJobInfo> list2 = xxlJobInfoDao.getJobsByGroup(1);
 
-		int ret3 = xxlJobInfoDao.findAllCount();
+		long ret3 = xxlJobInfoDao.count();
 
 	}
 

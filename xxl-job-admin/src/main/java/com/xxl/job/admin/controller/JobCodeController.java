@@ -32,7 +32,7 @@ public class JobCodeController {
 
 	@RequestMapping
 	public String index(HttpServletRequest request, Model model, int jobId) {
-		XxlJobInfo jobInfo = xxlJobInfoDao.loadById(jobId);
+		XxlJobInfo jobInfo = xxlJobInfoDao.getOne(jobId);
 		List<XxlJobLogGlue> jobLogGlues = xxlJobLogGlueDao.findByJobId(jobId);
 
 		if (jobInfo == null) {
@@ -63,7 +63,7 @@ public class JobCodeController {
 		if (glueRemark.length()<4 || glueRemark.length()>100) {
 			return new ReturnT<String>(500, I18nUtil.getString("jobinfo_glue_remark_limit"));
 		}
-		XxlJobInfo exists_jobInfo = xxlJobInfoDao.loadById(id);
+		XxlJobInfo exists_jobInfo = xxlJobInfoDao.getOne(id);
 		if (exists_jobInfo == null) {
 			return new ReturnT<String>(500, I18nUtil.getString("jobinfo_glue_jobid_unvalid"));
 		}
@@ -74,7 +74,7 @@ public class JobCodeController {
 		exists_jobInfo.setGlueUpdatetime(new Date());
 
 		exists_jobInfo.setUpdateTime(new Date());
-		xxlJobInfoDao.update(exists_jobInfo);
+		xxlJobInfoDao.save(exists_jobInfo);
 
 		// log old code
 		XxlJobLogGlue xxlJobLogGlue = new XxlJobLogGlue();
